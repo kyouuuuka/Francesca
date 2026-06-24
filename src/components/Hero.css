@@ -1,0 +1,391 @@
+/* ============================================================
+   HERO — editorial, layered, dreamy. Content sits directly on
+   the footage (no glass card). Cursor + scroll parallax create
+   depth. Defaults below keep it sane before JS sets the vars.
+   ============================================================ */
+.hero {
+  --p: 0; /* scroll progress 0..1 through the hero (set by JS) */
+  --mx: 0; /* cursor offset -0.5..0.5 (set by JS) */
+  --my: 0;
+  position: relative;
+  height: 185vh; /* scroll distance to scrub + parallax */
+  background: #f7eee9;
+}
+
+/* No scrub (mobile / autoplay loop): collapse to a single screen. Driven by a
+   class, NOT a media query, so reduced-motion desktop still keeps scrub height. */
+.hero--static {
+  height: 100vh;
+}
+
+.hero__sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Layer 1 — two stacked videos, cross-faded via opacity (never unmounted). */
+.hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.04); /* hide edge bleed from parallax/scale */
+}
+
+/* Idle stays fully opaque underneath at ALL times, so the page background never
+   peeks through mid-transition (no white flash) and the re-emerging idle is
+   always in motion. */
+.hero__video--idle {
+  opacity: 1;
+}
+
+/* Scrub sits on top (later in the DOM). Its opacity is toggled 0/1 in JS for a
+   direct switch — no transition, so there's never a blended/layered frame. */
+.hero__video--scrub {
+  opacity: 0;
+}
+
+/* Layer 2 — editorial scrim: top wash for nav legibility, a warm
+   vignette anchored bottom-left behind the headline, and a soft
+   fade into the cream page at the very bottom. Flowers stay visible
+   on the right / upper area (the negative space). */
+.hero__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(34, 22, 32, 0.32) 0%, rgba(34, 22, 32, 0) 22%),
+    radial-gradient(120% 95% at 18% 78%, rgba(28, 16, 28, 0.5) 0%, rgba(28, 16, 28, 0) 52%),
+    linear-gradient(180deg, rgba(247, 238, 233, 0) 80%, #f7eee9 100%);
+}
+
+/* Layer 4 — dreamy light bloom that drifts toward the cursor */
+.hero__glow {
+  position: absolute;
+  top: 30%;
+  left: 55%;
+  width: 60vmax;
+  height: 60vmax;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(255, 234, 214, 0.5) 0%,
+    rgba(255, 220, 235, 0.18) 35%,
+    transparent 60%
+  );
+  mix-blend-mode: screen;
+  transform: translate3d(calc(var(--mx) * 60px - 50%), calc(var(--my) * 60px - 50%), 0);
+  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Layers 3/5 — drifting petals */
+.hero__petals {
+  position: absolute;
+  inset: -5% 0;
+  pointer-events: none;
+  /* parallax opposite the cursor for depth */
+  transform: translate3d(calc(var(--mx) * -26px), calc(var(--my) * -18px), 0);
+  transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.petal {
+  position: absolute;
+  top: 0;
+  border-radius: 100% 0 100% 0;
+  background: radial-gradient(circle at 32% 28%, #fff, var(--petal-c, #ffd9e2));
+  opacity: 0;
+  filter: blur(0.3px) drop-shadow(0 2px 4px rgba(120, 70, 90, 0.12));
+  animation-name: petal-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--petal-o, 0.5);
+  }
+  92% {
+    opacity: var(--petal-o, 0.5);
+  }
+  100% {
+    transform: translate3d(var(--drift, 30px), 112vh, 0) rotate(340deg);
+    opacity: 0;
+  }
+}
+
+/* Layer 6 — content. Outer node = scroll parallax (instant, no
+   transition). Inner node = cursor parallax (eased). */
+.hero__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 6vw;
+  /* Slide the whole block out sideways (to the left) as you scroll into the
+     dive — the smooth scrubbing footage stays fully visible behind it. */
+  transform: translate3d(calc(var(--p) * -70vw), 0, 0);
+  opacity: calc(1 - var(--p) * 0.7);
+}
+
+.hero__inner {
+  max-width: 56ch;
+  transform: translate3d(calc(var(--mx) * 12px), calc(var(--my) * 10px), 0);
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero__label {
+  margin: 0 0 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--cream);
+  text-shadow: 0 1px 10px rgba(30, 15, 25, 0.45);
+  animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+/* little leading rule for the eyebrow */
+.hero__label::before {
+  content: '';
+  width: 2.4rem;
+  height: 1px;
+  background: var(--cream);
+  opacity: 0.7;
+}
+
+.hero__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(3.4rem, 11vw, 9.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  text-shadow: 0 4px 40px rgba(30, 12, 24, 0.4);
+}
+
+.hero__name-line {
+  display: block;
+  animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) calc(0.22s + var(--i) * 0.12s) both;
+}
+/* second name line: lighter, italic accent — editorial flourish */
+.hero__name-line:last-child {
+  font-style: italic;
+  font-weight: 400;
+  margin-left: 0.06em;
+}
+
+.hero__tagline {
+  margin: 1.8rem 0 0;
+  max-width: 40ch;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.65;
+  color: var(--cream-soft);
+  text-shadow: 0 1px 14px rgba(30, 15, 25, 0.4);
+  animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2.4rem;
+  animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) 0.62s both;
+}
+
+/* ---- Premium buttons ---- */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.7rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.4s ease;
+}
+.btn:hover {
+  transform: translateY(-3px);
+}
+
+.btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  box-shadow: 0 10px 30px rgba(157, 58, 93, 0.4);
+}
+.btn--primary:hover {
+  box-shadow: 0 16px 40px rgba(157, 58, 93, 0.5);
+}
+.btn--primary::after {
+  /* soft light sweep on hover */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn--primary:hover::after {
+  transform: translateX(130%);
+}
+
+.btn__arrow {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn--primary:hover .btn__arrow {
+  transform: translateX(4px);
+}
+
+.btn--ghost {
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--accent-deep);
+  border-color: transparent;
+}
+
+/* ---- Editorial side label (right edge, rotated) ---- */
+.hero__side {
+  position: absolute;
+  right: 2.4rem;
+  top: 50%;
+  /* exits to the right as the content exits left */
+  transform: translate(calc(var(--p) * 12vw), -50%) rotate(90deg);
+  transform-origin: right center;
+  opacity: calc(1 - var(--p) * 1.4);
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cream-soft);
+  text-shadow: 0 1px 10px rgba(30, 15, 25, 0.4);
+}
+
+/* ---- Scroll cue (bottom-left, aligned with content) ---- */
+.hero__scroll {
+  position: absolute;
+  left: 6vw;
+  bottom: 2.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--cream-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  /* slides out left with the content */
+  transform: translateX(calc(var(--p) * -40vw));
+  opacity: calc(1 - var(--p) * 2); /* fades quickly as you scroll */
+}
+.hero__scroll-line {
+  width: 46px;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left center;
+  animation: scroll-line 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* ---- Keyframes ---- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes scroll-line {
+  0%,
+  100% {
+    transform: scaleX(0.4);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* ============ Reduced motion: calm, static, fully legible ============ */
+@media (prefers-reduced-motion: reduce) {
+  /* Idle loop only (scrub is disabled in JS). Drop decorative motion and the
+     sideways exit — content stays put and fully legible. */
+  .hero__video {
+    transition: none;
+  }
+  .hero__content {
+    transform: none;
+    opacity: 1;
+  }
+  .hero__inner,
+  .hero__glow,
+  .hero__petals {
+    transform: none;
+    transition: none;
+  }
+  .hero__petals {
+    display: none; /* decorative drift removed */
+  }
+  .hero__label,
+  .hero__name-line,
+  .hero__tagline,
+  .hero__actions {
+    animation: none;
+  }
+  .hero__scroll-line {
+    animation: none;
+  }
+}
+
+/* ============ Mobile: autoplay loop, centered, simplified ============ */
+@media (max-width: 768px) {
+  .hero__content {
+    padding: 0 7vw;
+    transform: none;
+    opacity: 1;
+  }
+  .hero__inner {
+    transform: none;
+  }
+  .hero__name {
+    font-size: clamp(3rem, 17vw, 5.5rem);
+  }
+  .hero__side {
+    display: none;
+  }
+  .hero__petals {
+    opacity: 0.7;
+  }
+}

@@ -1,0 +1,62 @@
+:root {
+  --ink: #1f1b24;
+  --ink-soft: #5a5563;
+  --accent: #c4587b;
+  --accent-deep: #9d3a5d;
+
+  /* Cream/light tones for text laid directly over the footage. */
+  --cream: #fbf3ee;
+  --cream-soft: rgba(251, 243, 238, 0.78);
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Glassmorphism tokens */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-blur: 18px;
+  --glass-shadow: 0 8px 32px rgba(80, 50, 70, 0.12);
+
+  font-family: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--ink);
+  /* Soft floral gradient backdrop so the frosted glass has color to refract. */
+  background:
+    radial-gradient(1200px 800px at 12% 8%, #ffe2ec 0%, transparent 55%),
+    radial-gradient(1000px 700px at 88% 18%, #e7e0ff 0%, transparent 50%),
+    radial-gradient(1100px 900px at 70% 95%, #d8f0ea 0%, transparent 55%),
+    linear-gradient(180deg, #fdf6f8 0%, #f6f3fb 100%);
+  background-attachment: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ---- Frosted glass utility ---- */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
