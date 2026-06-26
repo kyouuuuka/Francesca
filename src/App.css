@@ -1,6 +1,7 @@
 /* ============ Nav (non-sticky — floats over hero, scrolls away) ============ */
 .hero-wrap {
   position: relative;
+  z-index: 1; /* sit above the fixed <Atmosphere> layer (z-index 0) */
 }
 
 .nav {
@@ -61,7 +62,9 @@
 /* ---- Links: index number + animated underline ---- */
 .nav__links {
   display: flex;
-  gap: 2.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -131,198 +134,655 @@
   }
 }
 
-/* ============ Sections + reveal-on-scroll ============ */
-.page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
+/* ============ Story container (sits above the atmosphere) ============ */
+.story {
+  position: relative;
+  z-index: 1;
+  /* Clip the garland's horizontal over-bleed (it's intentionally wider than the
+     page for edge coverage) so it can't create a horizontal scrollbar. Only the
+     X axis is clipped; Y stays visible so the garland still drapes up over the
+     hero and down into the chapter. Safe for the sticky hero — that lives in a
+     separate element (.hero-wrap), not in here. */
+  overflow-x: clip;
 }
 
-.section {
-  padding: 6rem 0;
+/* Shared body type for prose inside chapters */
+.story p {
+  text-wrap: pretty;
 }
 
-.section__inner {
+/* ============ Seam garland — hides the hero → Chapter One transition ========
+   A zero-height wrapper pinned to the TOP of .story (its positioned ancestor),
+   i.e. exactly the seam line. The garland image overflows it upward (over the
+   hero) and downward (draping into Chapter One), fully covering the join.
+   ------------------------------------------------------------------------- */
+.seam {
+  /* === fine-tuning knobs ===
+     --garland-rise : how far UP the garland sits (higher % => the dense band
+                      rides higher and covers more of the hero side).
+     --garland-nudge: extra vertical nudge in px (+ down, − up) for pixel tweaks.
+     --garland-w    : width relative to the page (100% = exact page width). */
+  --garland-rise: 42%;
+  --garland-nudge: 0px;
+  --garland-w: 102%;
+
+  position: absolute;
+  top: 0; /* = the seam: the top edge of the first chapter, under the hero */
+  left: 0;
   width: 100%;
+  height: 0; /* anchor only — the image overflows both ways */
+  z-index: 60; /* above the hero (z-index 1) and the chapter content */
+  pointer-events: none; /* never blocks scroll, clicks, or text selection */
 }
 
-.section__head {
-  margin-bottom: 2.5rem;
-  text-align: center;
+.seam__garland {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--garland-w);
+  height: auto; /* keep the PNG's aspect ratio — no distortion on resize */
+  display: block;
+  /* center horizontally, then lift so the dense band straddles the seam */
+  transform: translate(-50%, calc(-1 * var(--garland-rise) + var(--garland-nudge)));
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-.section__eyebrow {
-  margin: 0 0 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent);
+/* Responsive: width:auto height keeps the image proportional, and --garland-rise
+   is a % of the image's own height, so it scales with the page. These just lift
+   it a little and oversize it slightly on shorter screens so the thinner band
+   still covers the line. Tune the knobs above if your arch needs it. */
+@media (max-width: 768px) {
+  .seam {
+    --garland-rise: 46%;
+    --garland-w: 132%;
+  }
 }
-
-.section__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 5vw, 3.4rem);
-  font-weight: 300;
-  letter-spacing: -0.015em;
-  color: var(--ink);
-}
-
-/* Smooth fade + slide as each section enters the viewport. */
-.reveal {
-  opacity: 0;
-  transform: translateY(32px);
-  transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.reveal.is-visible {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
+@media (max-width: 480px) {
+  .seam {
+    --garland-rise: 50%;
+    --garland-w: 168%;
   }
 }
 
-/* ============ About ============ */
+/* ============================================================
+   01 · ABOUT — glass editorial card, offset, with a margin aside.
+   Glass is purposeful here: the card floats over the live floral
+   field, which is the whole point of the atmosphere.
+   ============================================================ */
 .about {
-  padding: 2.5rem;
-  border-radius: 24px;
-  max-width: 760px;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.85fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: start;
 }
 
-.about p {
+.about__card {
+  padding: clamp(1.75rem, 4vw, 3rem);
+  border-radius: 26px;
+}
+
+.about__lead {
+  margin: 0 0 1.2rem;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.3rem, 2.2vw, 1.7rem);
+  line-height: 1.42;
+  color: var(--ink);
+}
+
+/* drop cap — editorial signature */
+.about__drop {
+  float: left;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 3.4em;
+  line-height: 0.72;
+  padding: 0.06em 0.12em 0 0;
+  color: var(--accent-deep);
+}
+
+.about__body {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+
+.about__aside {
+  position: sticky;
+  top: 2rem;
+  padding-top: 0.4rem;
+}
+
+.about__aside-label {
+  margin: 0 0 1rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--accent-deep);
+}
+
+.about__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.about__list li {
+  padding: 0.7rem 0;
+  border-top: 1px solid rgba(120, 70, 90, 0.16);
+  font-size: 1rem;
+  color: var(--ink);
+}
+.about__list li:last-child {
+  border-bottom: 1px solid rgba(120, 70, 90, 0.16);
+}
+
+/* ============================================================
+   02 · SELECTED WRITING — masonry manuscript gallery with an
+   editorial filter set as running text (not pill buttons).
+   ============================================================ */
+.folio__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  margin-bottom: clamp(2rem, 5vh, 3.5rem);
+  align-items: baseline;
+}
+
+.folio__filter-link {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  font-weight: 400;
+  color: var(--ink-soft);
+  transition: color 0.3s ease;
+}
+.folio__filter-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -0.3rem;
+  width: 100%;
+  height: 1px;
+  background: var(--accent-deep);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.folio__filter-link:hover {
+  color: var(--ink);
+}
+.folio__filter-link.is-active {
+  color: var(--accent-deep);
+  font-style: italic;
+}
+.folio__filter-link.is-active::after,
+.folio__filter-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* CSS columns = true masonry flow for clippings of varied length */
+.folio__masonry {
+  columns: 3 280px;
+  column-gap: clamp(1rem, 2vw, 1.6rem);
+}
+
+@keyframes manuscript-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+.manuscript {
+  break-inside: avoid;
+  margin: 0 0 clamp(1rem, 2vw, 1.6rem);
+  padding: clamp(1.4rem, 2.2vw, 1.9rem);
+  border-radius: 4px;
+  background: rgba(255, 253, 251, 0.66);
+  border: 1px solid rgba(120, 70, 90, 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 30px rgba(80, 50, 70, 0.07);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: manuscript-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
+}
+.manuscript:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 22px 48px rgba(80, 50, 70, 0.16);
+}
+
+.manuscript__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+.manuscript__form {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--accent-deep);
+}
+.manuscript__year {
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.manuscript__title {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.2vw, 1.95rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.manuscript__excerpt {
+  margin: 0 0 1.2rem;
+  font-size: 1rem;
   line-height: 1.7;
   color: var(--ink-soft);
 }
 
-.skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 1.75rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.skills__chip {
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-/* ============ Work grid ============ */
-.work-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-
-.card {
-  border-radius: 22px;
-  overflow: hidden;
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 18px 40px rgba(80, 50, 70, 0.18);
-}
-
-.card__thumb {
-  aspect-ratio: 16 / 9;
-  background:
-    linear-gradient(135deg, rgba(196, 88, 123, 0.35), rgba(157, 110, 220, 0.3)),
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), transparent 60%);
-}
-
-.card__body {
-  padding: 1.5rem 1.75rem 1.75rem;
-}
-
-.card__tag {
-  display: inline-block;
-  font-size: 0.75rem;
+.manuscript__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--accent);
-}
-
-.card__title {
-  margin: 0.5rem 0 0.5rem;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 400;
-  color: var(--ink);
-}
-
-.card__blurb {
-  margin: 0 0 1rem;
-  line-height: 1.6;
-  color: var(--ink-soft);
-}
-
-.card__link {
-  font-weight: 600;
   color: var(--accent-deep);
   text-decoration: none;
 }
-
-.card__link:hover {
-  text-decoration: underline;
+.manuscript__rule {
+  display: block;
+  width: 1.4rem;
+  height: 1px;
+  background: var(--accent-deep);
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.manuscript__link:hover .manuscript__rule {
+  transform: scaleX(2.1);
 }
 
-/* ============ Contact ============ */
-.contact {
-  padding: 3rem 2.5rem;
-  border-radius: 24px;
-  text-align: center;
-  max-width: 680px;
-  margin: 0 auto;
+/* ============================================================
+   03 · PUBLICATIONS — a magazine spread. Left: one featured
+   piece. Right: a contents page with leader dots.
+   ============================================================ */
+.spread {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+  position: relative;
+}
+/* center gutter rule, like the spine of a magazine */
+.spread::before {
+  content: '';
+  position: absolute;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(120, 70, 90, 0.22), transparent);
 }
 
-.contact__lead {
-  margin: 0 0 1.75rem;
+.spread__feature-form {
+  margin: 0 0 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.spread__feature-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.spread__feature-venue {
+  margin: 0 0 1.4rem;
+  font-size: 1rem;
+  color: var(--accent-deep);
+}
+.spread__feature-note {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  max-width: 38ch;
+}
+
+.spread__contents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: pub;
+}
+.spread__entry {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(120, 70, 90, 0.16);
+}
+.spread__entry:last-child {
+  border-bottom: 1px solid rgba(120, 70, 90, 0.16);
+}
+.spread__entry-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem);
+  color: var(--ink);
+}
+.spread__entry-title::before {
+  counter-increment: pub;
+  content: counter(pub, decimal-leading-zero);
+  margin-right: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.spread__entry-dots {
+  align-self: end;
+  margin-bottom: 0.28em;
+  border-bottom: 1px dotted rgba(120, 70, 90, 0.4);
+}
+.spread__entry-venue {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+.spread__entry-year {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+}
+
+/* ============================================================
+   04 · RECOGNITION — vertical timeline narrative with a ruled
+   spine and floral nodes.
+   ============================================================ */
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 760px;
+}
+.timeline__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: clamp(1.2rem, 3vw, 2.4rem);
+  padding: 0 0 2.4rem 1.5rem;
+}
+/* the spine */
+.timeline__item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  bottom: -0.3rem;
+  width: 1px;
+  background: rgba(120, 70, 90, 0.22);
+}
+.timeline__item:last-child::before {
+  bottom: auto;
+  height: 0.6rem;
+}
+.timeline__year {
+  font-family: var(--font-display);
   font-size: 1.15rem;
+  font-style: italic;
+  color: var(--accent-deep);
+  padding-top: 0.1rem;
+}
+.timeline__node {
+  position: absolute;
+  left: -4.5px;
+  top: 0.5rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 100% 0 100% 0;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(196, 88, 123, 0.14);
+}
+.timeline__title {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.timeline__detail {
+  margin: 0;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--ink-soft);
 }
 
-.contact__btn {
-  display: inline-block;
+/* ============================================================
+   05 · JOURNAL — dated entries, date set in a left margin.
+   ============================================================ */
+.journal {
+  max-width: 880px;
+  margin-left: auto;
+}
+.entry {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: clamp(1.2rem, 3vw, 2.6rem);
+  padding: clamp(1.6rem, 3vh, 2.4rem) 0;
+  border-top: 1px solid rgba(120, 70, 90, 0.16);
+}
+.entry:last-child {
+  border-bottom: 1px solid rgba(120, 70, 90, 0.16);
+}
+.entry__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-top: 0.4rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.entry__meta time {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--accent-deep);
+}
+.entry__title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.entry__blurb {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  max-width: 56ch;
+}
+.entry__link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+.entry__link:hover {
+  opacity: 0.7;
+}
+
+/* ============================================================
+   06 · RESUME — an elegant document sheet (glass over the field).
+   ============================================================ */
+.resume-doc {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border-radius: 8px;
+}
+.resume-doc__head {
+  text-align: center;
+  padding-bottom: 1.6rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(120, 70, 90, 0.18);
+}
+.resume-doc__name {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.resume-doc__role {
+  margin: 0;
+  font-style: italic;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--accent-deep);
+}
+.resume-doc__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-bottom: 2.4rem;
+}
+.resume-doc__h {
+  margin: 0 0 1rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.resume-doc__row {
+  margin: 0 0 0.9rem;
+  display: flex;
+  flex-direction: column;
+}
+.resume-doc__row strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+.resume-doc__row span {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.resume-doc__btn {
+  display: block;
+  width: fit-content;
+  margin: 0 auto;
   padding: 0.85rem 2rem;
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
   font-weight: 600;
   text-decoration: none;
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
-
-.contact__btn:hover {
+.resume-doc__btn:hover {
   background: var(--accent-deep);
   transform: translateY(-2px);
 }
 
+/* ============================================================
+   07 · CONTACT — editorial close. Oversized email, quiet links.
+   ============================================================ */
+.closing {
+  max-width: 780px;
+  margin-left: auto;
+  text-align: right;
+}
+.closing__lead {
+  margin: 0 0 2rem;
+  font-size: clamp(1.1rem, 1.7vw, 1.3rem);
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin-left: auto;
+  max-width: 46ch;
+}
+.closing__email {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5.5vw, 3.6rem);
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  background-image: linear-gradient(var(--accent-deep), var(--accent-deep));
+  background-size: 0% 1.5px;
+  background-position: 100% 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.5s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+}
+.closing__email:hover {
+  color: var(--accent-deep);
+  background-size: 100% 1.5px;
+  background-position: 0% 100%;
+}
+.closing__links {
+  list-style: none;
+  margin: 2.4rem 0 0;
+  padding: 0;
+  display: flex;
+  gap: 1.6rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.closing__links a {
+  font-size: 0.84rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.closing__links a:hover {
+  color: var(--accent-deep);
+}
+
 /* ============ Footer ============ */
 .footer {
+  position: relative;
+  z-index: 1;
   padding: 3rem 1.5rem;
   text-align: center;
   color: var(--ink-soft);
@@ -330,24 +790,53 @@
 }
 
 /* ============ Responsive ============ */
+@media (max-width: 900px) {
+  .about {
+    grid-template-columns: 1fr;
+  }
+  .about__aside {
+    position: static;
+  }
+  .spread {
+    grid-template-columns: 1fr;
+  }
+  .spread::before {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .nav__links {
     gap: 1.1rem;
   }
-  .section {
-    padding: 4rem 0;
+  .folio__masonry {
+    columns: 1;
   }
-  .work-grid {
+  .entry {
     grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
-  .about,
-  .contact {
-    padding: 2rem 1.5rem;
+  .entry__meta {
+    flex-direction: row;
+    gap: 0.9rem;
+    padding-top: 0;
+  }
+  .closing,
+  .closing__lead,
+  .closing__links {
+    text-align: left;
+    justify-content: flex-start;
+    margin-left: 0;
   }
 }
 
 @media (max-width: 480px) {
   .nav__links a {
     font-size: 0.85rem;
+  }
+  .timeline__item {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    padding-left: 1.5rem;
   }
 }

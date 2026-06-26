@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './Hero.css'
 
-// Below this width (or with prefers-reduced-motion) we skip scroll-scrubbing.
-// Scrubbing video.currentTime on scroll is unreliable on mobile Safari, so we
-// fall back to just the idle loop instead.
-const MOBILE_MAX_WIDTH = 768
-
 // Hard switch (no fade): show the scrub video the instant you leave the very
 // top, show the idle loop when you're back at the top. The tiny epsilon just
 // defines "the very top" and avoids jitter right at the boundary.
@@ -36,20 +31,16 @@ export default function Hero({ label, name, tagline, idleSrc, scrubSrc }) {
     [],
   )
 
-  // Decide whether to scroll-scrub or show idle loop only. Per spec, mobile AND
-  // prefers-reduced-motion both skip scrubbing entirely.
+  // Decide whether to scroll-scrub or show idle loop only. We now scrub on
+  // mobile too (the scrub clip is encoded all-intra, so phone seeking is fast).
+  // Only prefers-reduced-motion falls back to the plain idle loop.
   useEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const smallScreen = window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`)
-    const decide = () => setScrub(!reduceMotion.matches && !smallScreen.matches)
+    const decide = () => setScrub(!reduceMotion.matches)
 
     decide()
     reduceMotion.addEventListener('change', decide)
-    smallScreen.addEventListener('change', decide)
-    return () => {
-      reduceMotion.removeEventListener('change', decide)
-      smallScreen.removeEventListener('change', decide)
-    }
+    return () => reduceMotion.removeEventListener('change', decide)
   }, [])
 
   // The idle video always autoplay-loops. Setting the autoPlay attribute after
@@ -78,9 +69,29 @@ export default function Hero({ label, name, tagline, idleSrc, scrubSrc }) {
     return () => video.removeEventListener('loadedmetadata', showFirstFrame)
   }, [])
 
+  // iOS unlock: mobile Safari won't repaint a seeked frame on a video that has
+  // never played. A play()->pause() inside the first touch gesture primes it so
+  // scroll-scrubbing actually updates the picture on phones.
+  useEffect(() => {
+    if (scrub !== true) return
+    const video = scrubRef.current
+    if (!video) return
+
+    let primed = false
+    const prime = () => {
+      if (primed) return
+      primed = true
+      video.muted = true
+      const p = video.play()
+      if (p) p.then(() => video.pause()).catch(() => {})
+    }
+    window.addEventListener('touchstart', prime, { once: true, passive: true })
+    return () => window.removeEventListener('touchstart', prime)
+  }, [scrub])
+
   // Scroll-scrub: map scroll progress through the hero to the scrub video's
-  // currentTime, cross-fade idle <-> scrub via a data attribute, and publish
-  // progress as --p so the content can slide out sideways.
+  // currentTime, hard-switch idle <-> scrub, and publish progress as --p so the
+  // content can slide out sideways.
   useEffect(() => {
     if (scrub !== true) return
 
@@ -115,17 +126,43 @@ export default function Hero({ label, name, tagline, idleSrc, scrubSrc }) {
 
     // Continuous rAF loop: ease shown time toward target so bursty scroll events
     // become smooth motion; idles itself once caught up.
-    const SMOOTHING = 0.12
+    //
+    // The smoothness fix: Chrome has no fastSeek() and runs currentTime seeks
+    // asynchronously. Assigning currentTime every frame queues seeks faster than
+    // the decoder can satisfy them, so the picture lurches and lags. Instead we
+    // gate on the 'seeked' event — issue the next seek only once the previous one
+    // has landed, always to the LATEST eased position. Seeks then self-pace to
+    // the decoder's real throughput and the footage flows instead of stuttering.
+    const SMOOTHING = 0.2
+    const hasFastSeek = typeof video.fastSeek === 'function'
+    let seeking = false
+
+    const seekTo = (t) => {
+      if (hasFastSeek) {
+        video.fastSeek(t)
+      } else {
+        seeking = true
+        video.currentTime = t
+      }
+    }
+    const onSeeked = () => {
+      seeking = false
+    }
+    video.addEventListener('seeked', onSeeked)
+
     const tick = () => {
       const diff = targetTime - shownTime
       if (Math.abs(diff) < 0.004) {
         shownTime = targetTime
+        if (!seeking) seekTo(shownTime) // settle exactly on the final frame
         frame = 0
         return
       }
       shownTime += diff * SMOOTHING
-      if (typeof video.fastSeek === 'function') video.fastSeek(shownTime)
-      else video.currentTime = shownTime
+      // Skip the assignment while a seek is still in flight; the next frame will
+      // seek to the newer position, dropping the intermediate ones we couldn't
+      // have painted anyway.
+      if (!seeking) seekTo(shownTime)
       frame = requestAnimationFrame(tick)
     }
 
@@ -145,6 +182,7 @@ export default function Hero({ label, name, tagline, idleSrc, scrubSrc }) {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
       video.removeEventListener('loadedmetadata', onMeta)
+      video.removeEventListener('seeked', onSeeked)
       video.style.opacity = ''
     }
   }, [scrub])
