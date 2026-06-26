@@ -24,32 +24,21 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 html,
 body {
   margin: 0;
   padding: 0;
 }
 
+/* Native smooth-scroll is intentionally OFF — Lenis (useSmoothScroll) owns
+   scroll easing, and under reduced motion we want plain instant native scroll.
+   The floral colour now lives in the fixed <Atmosphere> layer; the body is just
+   the calm cream base it sits on, matched to the hero's bottom fade so the
+   hero dissolves seamlessly into the page. */
 body {
   min-height: 100vh;
   color: var(--ink);
-  /* Soft floral gradient backdrop so the frosted glass has color to refract. */
-  background:
-    radial-gradient(1200px 800px at 12% 8%, #ffe2ec 0%, transparent 55%),
-    radial-gradient(1000px 700px at 88% 18%, #e7e0ff 0%, transparent 50%),
-    radial-gradient(1100px 900px at 70% 95%, #d8f0ea 0%, transparent 55%),
-    linear-gradient(180deg, #fdf6f8 0%, #f6f3fb 100%);
-  background-attachment: fixed;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  background: #f7eee9;
 }
 
 /* ---- Frosted glass utility ---- */

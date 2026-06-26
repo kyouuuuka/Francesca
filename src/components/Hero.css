@@ -22,6 +22,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh; /* fill the visible viewport on mobile (handles iOS toolbar) */
   overflow: hidden;
 }
 
@@ -33,7 +34,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transform: scale(1.04); /* hide edge bleed from parallax/scale */
+  transform: scale(-1.04, 1.04); /* mirror horizontally + hide edge bleed */
 }
 
 /* Idle stays fully opaque underneath at ALL times, so the page background never
@@ -369,23 +370,43 @@
   }
 }
 
-/* ============ Mobile: autoplay loop, centered, simplified ============ */
+/* ============ Mobile: scrub still works; tighten the layout ============ */
 @media (max-width: 768px) {
+  /* Shorter scrub distance so the dive doesn't take a marathon of scrolling.
+     (Doesn't touch .hero--static, which stays 100vh for the reduced-motion idle.) */
+  .hero:not(.hero--static) {
+    height: 150vh;
+  }
   .hero__content {
     padding: 0 7vw;
-    transform: none;
-    opacity: 1;
-  }
-  .hero__inner {
-    transform: none;
   }
   .hero__name {
-    font-size: clamp(3rem, 17vw, 5.5rem);
+    font-size: clamp(2.6rem, 15vw, 5rem);
+  }
+  .hero__tagline {
+    font-size: 1rem;
   }
   .hero__side {
-    display: none;
+    display: none; /* no room for the rotated edge label */
   }
   .hero__petals {
     opacity: 0.7;
+  }
+  .hero__scroll {
+    bottom: 1.8rem;
+  }
+}
+
+/* Very small / short phones: keep the headline and buttons from crowding. */
+@media (max-width: 420px) {
+  .hero__name {
+    font-size: clamp(2.4rem, 16vw, 3.4rem);
+  }
+  .hero__actions {
+    gap: 0.7rem;
+  }
+  .btn {
+    padding: 0.8rem 1.3rem;
+    font-size: 0.9rem;
   }
 }

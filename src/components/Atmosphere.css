@@ -1,0 +1,84 @@
+/* ============================================================
+   ATMOSPHERE — the persistent, evolving floral field. Fixed
+   behind the page content; its mood shifts with --page-progress
+   (0 = morning rose → 1 = violet dusk). Decorative only.
+   ============================================================ */
+.atmos {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Evolving gradient wash. We cross-fade two full-bleed gradients by driving
+   opacity with scroll progress, so the colour temperature of the whole page
+   travels from dawn to dusk as you read. */
+.atmos__wash {
+  position: absolute;
+  inset: 0;
+  /* morning layer (always present, fades back as dusk rises) */
+  background:
+    radial-gradient(1100px 760px at 14% 6%, #ffe6ee 0%, transparent 55%),
+    radial-gradient(960px 680px at 88% 16%, #f0e8ff 0%, transparent 52%),
+    radial-gradient(1200px 900px at 68% 96%, #def2ec 0%, transparent 55%);
+}
+/* dusk layer painted on a pseudo-element, revealed by --page-progress */
+.atmos__wash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: clamp(0, calc(var(--page-progress, 0) * 1.15), 1);
+  background:
+    radial-gradient(1200px 820px at 18% 4%, #f6d9e8 0%, transparent 56%),
+    radial-gradient(1000px 720px at 84% 22%, #d9cdf2 0%, transparent 54%),
+    radial-gradient(1300px 980px at 62% 98%, #e9d6ef 0%, transparent 58%),
+    linear-gradient(180deg, rgba(58, 38, 64, 0) 60%, rgba(58, 38, 64, 0.08) 100%);
+  transition: opacity 0.2s linear;
+}
+
+.atmos__petals {
+  position: absolute;
+  inset: -6% 0;
+}
+
+.atmos__petal {
+  position: absolute;
+  top: 0;
+  border-radius: 100% 0 100% 0;
+  background: radial-gradient(circle at 32% 28%, #fff, var(--c, #ffd9e2));
+  opacity: 0;
+  filter: blur(0.4px) drop-shadow(0 2px 5px rgba(120, 70, 90, 0.1));
+  animation-name: atmos-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes atmos-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--o, 0.2);
+  }
+  90% {
+    opacity: var(--o, 0.2);
+  }
+  100% {
+    transform: translate3d(var(--drift, 30px), 110vh, 0) rotate(330deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No drifting petals, no day→dusk travel — hold a calm, static field. */
+  .atmos__petals {
+    display: none;
+  }
+  .atmos__wash::after {
+    opacity: 0.35;
+    transition: none;
+  }
+}
